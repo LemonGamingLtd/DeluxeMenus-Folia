@@ -283,6 +283,10 @@ public class DeluxeMenus extends JavaPlugin {
         if (Bukkit.getPluginManager().isPluginEnabled("ExecutableBlocks")) {
             this.itemHooks.put("executableblocks", new ExecutableBlocksHook());
         }
+
+        if (Bukkit.getPluginManager().isPluginEnabled("SimpleItemGenerator")) {
+            this.itemHooks.put("simpleitemgenerator", new SimpleItemGeneratorHook(this));
+        }
     }
 
     private void setUpBungeeCordMessaging() {
