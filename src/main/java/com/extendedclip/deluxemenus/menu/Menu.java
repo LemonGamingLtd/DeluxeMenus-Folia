@@ -191,6 +191,7 @@ public class Menu {
         MenuHolder holder = optionalHolder.get();
 
         holder.stopPlaceholderUpdate();
+        holder.stopRefreshTask();
 
         if (executeCloseActions) {
             holder.getMenu().map(Menu::options).map(MenuOptions::closeHandler).flatMap(h -> h).ifPresent(h -> h.onClick(holder));
@@ -377,6 +378,10 @@ public class Menu {
             final boolean updatePlaceholders = update;
 
             GlobalScheduler.get(DeluxeMenus.getInstance()).run(() -> {
+                if(options.refresh()) {
+                    holder.startRefreshTask();
+                }
+
                 if (isInMenu(holder.getViewer())) {
                     closeMenu(plugin, holder.getViewer(), false);
                 }
@@ -389,6 +394,10 @@ public class Menu {
                 }
             });
         });
+    }
+
+    public void refreshForAll() {
+        menuHolders.stream().filter(menuHolder -> menuHolder.getMenuName().equalsIgnoreCase(options.name())).forEach(MenuHolder::refreshMenu);
     }
 
     public @NotNull Map<Integer, TreeMap<Integer, MenuItem>> getMenuItems() {
@@ -406,4 +415,9 @@ public class Menu {
     public @NotNull String path() {
         return this.path;
     }
+
+    public int activeViewers() {
+        return (int) menuHolders.stream().filter(holder -> holder.getMenuName().equalsIgnoreCase(options.name())).count();
+    }
+
 }

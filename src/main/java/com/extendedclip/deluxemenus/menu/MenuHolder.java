@@ -11,7 +11,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -31,6 +30,7 @@ public class MenuHolder implements InventoryHolder {
     private String menuName;
     private Set<MenuItem> activeItems;
     private Task updateTask = null;
+    private Task refreshTask = null;
     private Inventory inventory;
     private boolean updating;
     private boolean parsePlaceholdersInArguments;
@@ -201,8 +201,10 @@ public class MenuHolder implements InventoryHolder {
 
                 setActiveItems(active);
 
-                if (update) {
+                if (update && updateTask == null) {
                     startUpdatePlaceholdersTask();
+                } else if(!update && updateTask != null) {
+                    stopPlaceholderUpdate();
                 }
 
                 setUpdating(false);
@@ -218,6 +220,33 @@ public class MenuHolder implements InventoryHolder {
             }
             updateTask = null;
         }
+    }
+
+    public void stopRefreshTask() {
+        if(refreshTask != null) {
+            try {
+                refreshTask.cancel();
+            } catch (Exception ignored) {
+            }
+            refreshTask = null;
+        }
+    }
+
+    public void startRefreshTask() {
+        if(refreshTask != null) {
+            stopRefreshTask();
+        }
+
+        refreshTask = AsyncScheduler.get(DeluxeMenus.getInstance()).runTimer(new Runnable() {
+            @Override
+            public void run() {
+                refreshMenu();
+            }
+        }, 20L,
+            20L * Menu.getMenuByName(menuName)
+                .map(Menu::options)
+                .map(MenuOptions::refreshInterval)
+                .orElse(10));
     }
 
     public void startUpdatePlaceholdersTask() {
@@ -275,14 +304,7 @@ public class MenuHolder implements InventoryHolder {
                         }
 
                         if (item.options().loreHasPlaceholders()) {
-
-                            List<String> updated = new ArrayList<>();
-
-                            for (String line : item.options().lore()) {
-                                updated.add(StringUtils
-                                        .color(setPlaceholdersAndArguments(line)));
-                            }
-                            meta.setLore(updated);
+                            meta.setLore(item.getMenuItemLore(getHolder(), item.options().lore()));
                         }
 
                         i.setItemMeta(meta);

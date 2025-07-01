@@ -36,7 +36,7 @@ public class MMOItemsHook implements ItemHook, SimpleCache {
             return cached.clone();
         }
 
-        String[] splitArgs = arguments[0].split(":");
+        String[] splitArgs = arguments[0].split(":", 2);
         if (splitArgs.length != 2) {
             return new ItemStack(Material.STONE, 1);
         }
@@ -73,7 +73,7 @@ public class MMOItemsHook implements ItemHook, SimpleCache {
         if (arguments.length == 0) {
             return false;
         }
-        String[] splitArgs = arguments[0].split(":");
+        String[] splitArgs = arguments[0].split(":", 2);
         if (splitArgs.length != 2) return false;
         return splitArgs[0].equalsIgnoreCase(MMOItems.getTypeName(item)) && splitArgs[1].equalsIgnoreCase(MMOItems.getID(item));
     }

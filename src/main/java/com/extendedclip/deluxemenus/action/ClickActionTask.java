@@ -3,7 +3,13 @@ package com.extendedclip.deluxemenus.action;
 import com.extendedclip.deluxemenus.DeluxeMenus;
 import com.extendedclip.deluxemenus.menu.Menu;
 import com.extendedclip.deluxemenus.menu.MenuHolder;
-import com.extendedclip.deluxemenus.utils.*;
+import com.extendedclip.deluxemenus.persistentmeta.PersistentMetaHandler;
+import com.extendedclip.deluxemenus.utils.AdventureUtils;
+import com.extendedclip.deluxemenus.utils.DebugLevel;
+import com.extendedclip.deluxemenus.utils.ExpUtils;
+import com.extendedclip.deluxemenus.utils.SoundUtils;
+import com.extendedclip.deluxemenus.utils.StringUtils;
+import com.extendedclip.deluxemenus.utils.VersionHelper;
 import io.github.projectunified.minelib.scheduler.global.GlobalScheduler;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
@@ -70,23 +76,30 @@ public class ClickActionTask implements Runnable {
                     plugin.debug(DebugLevel.HIGHEST, Level.INFO, "Meta action not supported on this server version.");
                     break;
                 }
-                try {
-                    final boolean result = plugin.getPersistentMetaHandler().setMeta(player, executable);
-                    if (!result) {
+                final PersistentMetaHandler.OperationResult result = plugin.getPersistentMetaHandler().parseAndExecuteMetaActionFromString(player, executable);
+                switch (result) {
+                    case INVALID_SYNTAX:
                         plugin.debug(DebugLevel.HIGHEST, Level.INFO, "Invalid meta action! Make sure you have the right syntax.");
                         break;
-                    }
-                } catch (final NumberFormatException exception) {
-                    plugin.debug(DebugLevel.HIGHEST, Level.INFO, "Invalid integer value for meta action!");
+                    case NEW_VALUE_IS_DIFFERENT_TYPE:
+                        plugin.debug(DebugLevel.HIGHEST, Level.INFO, "Invalid meta action! New value is a different type than the old value!");
+                        break;
+                    case INVALID_TYPE:
+                        plugin.debug(DebugLevel.HIGHEST, Level.INFO, "Invalid meta action! The specified type is not supported for the specified action!");
+                        break;
+                    case EXISTENT_VALUE_IS_DIFFERENT_TYPE:
+                        plugin.debug(DebugLevel.HIGHEST, Level.INFO, "Invalid meta action! Existent value is a different type than the new value!");
+                        break;
+                    case VALUE_NOT_FOUND:
+                    case SUCCESS:
+                    default:
+                        break;
                 }
                 break;
 
             case PLAYER:
-                player.chat("/" + executable);
-                break;
-
             case PLAYER_COMMAND_EVENT:
-                Bukkit.getPluginManager().callEvent(new PlayerCommandPreprocessEvent(player, "/" + executable));
+                player.chat("/" + executable);
                 break;
 
             case PLACEHOLDER:
@@ -111,6 +124,34 @@ public class ClickActionTask implements Runnable {
 
             case MESSAGE:
                 player.sendMessage(StringUtils.color(executable));
+                break;
+
+            case LOG:
+                final String[] logParts = executable.split(" ", 2);
+
+                if (logParts.length == 0 || logParts[0].isBlank()) {
+                    plugin.debug(DebugLevel.HIGHEST, Level.WARNING, "LOG command requires at least a message");
+                    break;
+                }
+
+                Level logLevel;
+                String message;
+
+                if(logParts.length == 1) {
+                    logLevel = Level.INFO;
+                    message = logParts[0];
+                } else {
+                    message = logParts[1];
+
+                    try {
+                        logLevel = Level.parse(logParts[0].toUpperCase());
+                    } catch (IllegalArgumentException e) {
+                        logLevel = Level.INFO;
+                        plugin.debug(DebugLevel.HIGHEST, Level.WARNING, "Log level " + logParts[0] + " is not a valid log level! Using INFO instead.");
+                    }
+                }
+
+                plugin.getLogger().log(logLevel, String.format("[%s]: %s", holder.map(MenuHolder::getMenuName).orElse("Unknown Menu"), message));
                 break;
 
             case BROADCAST:

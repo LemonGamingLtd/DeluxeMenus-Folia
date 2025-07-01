@@ -6,7 +6,7 @@ plugins {
 
 // Change to true when releasing
 val release = false
-val majorVersion = "1.14.1"
+val majorVersion = "1.14.2"
 val minorVersion = if (release) "Release" else "DEV-" + System.getenv("BUILD_NUMBER")
 
 group = "com.extendedclip"
@@ -18,6 +18,7 @@ repositories {
     maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
     maven("https://repo.glaremasters.me/repository/public/")
     maven("https://nexus.phoenixdevt.fr/repository/maven-public/")
+    maven("https://repo.nexomc.com/releases/")
     maven("https://repo.oraxen.com/releases")
     maven("https://jitpack.io")
 }
@@ -30,6 +31,7 @@ dependencies {
 
     compileOnly(libs.headdb)
     compileOnly(libs.itemsadder)
+    compileOnly(libs.nexo)
     compileOnly(libs.oraxen)
     compileOnly(libs.mythiclib)
     compileOnly(libs.mmoitems)
@@ -41,6 +43,7 @@ dependencies {
     implementation(libs.nashorn)
     implementation(libs.adventure.platform)
     implementation(libs.adventure.minimessage)
+    implementation(libs.bstats)
     implementation(libs.minelib.scheduler.global)
     implementation(libs.minelib.scheduler.async)
     implementation(libs.minelib.scheduler.entity)
@@ -54,12 +57,14 @@ tasks {
         relocate("org.objectweb.asm", "com.extendedclip.deluxemenus.libs.asm")
         relocate("org.openjdk.nashorn", "com.extendedclip.deluxemenus.libs.nashorn")
         relocate("net.kyori", "com.extendedclip.deluxemenus.libs.adventure")
+        relocate("org.bstats", "com.extendedclip.deluxemenus.libs.bstats")
         relocate("io.github.projectunified.minelib", "com.extendedclip.deluxemenus.libs.minelib")
         archiveFileName.set("DeluxeMenus-${rootProject.version}.jar")
     }
     java {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        disableAutoTargetJvm()
     }
 
     processResources {
